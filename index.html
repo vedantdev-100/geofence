@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room Geofence Builder</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+:root, [data-theme="light"] {
+  --color-bg: #f7f6f2; --color-surface: #f9f8f5; --color-surface-2: #fbfbf9;
+  --color-surface-offset: #f3f0ec; --color-border: #d4d1ca; --color-divider: #dcd9d5;
+  --color-text: #28251d; --color-text-muted: #7a7974; --color-text-faint: #bab9b4;
+  --color-primary: #01696f; --color-primary-hover: #0c4e54; --color-primary-highlight: #cedcd8;
+  --color-success: #437a22; --color-success-highlight: #d4dfcc;
+  --color-error: #a12c7b; --color-error-highlight: #e0ced7;
+  --color-warning: #964219; --color-warning-highlight: #ddcfc6;
+  --shadow-sm: 0 1px 2px oklch(0.2 0.01 80 / 0.06);
+  --shadow-md: 0 4px 12px oklch(0.2 0.01 80 / 0.08);
+  --shadow-lg: 0 12px 32px oklch(0.2 0.01 80 / 0.12);
+  --radius-sm: 0.375rem; --radius-md: 0.5rem; --radius-lg: 0.75rem; --radius-xl: 1rem; --radius-full: 9999px;
+  --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;
+  --text-xs:clamp(0.75rem,0.7rem + 0.25vw,0.875rem);--text-sm:clamp(0.875rem,0.8rem + 0.35vw,1rem);
+  --text-base:clamp(1rem,0.95rem + 0.25vw,1.125rem);--text-lg:clamp(1.125rem,1rem + 0.75vw,1.5rem);
+  --text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);
+  --transition:180ms cubic-bezier(0.16,1,0.3,1);
+  --font-body:"Satoshi","Inter",sans-serif;
+}
+[data-theme="dark"] {
+  --color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;
+  --color-surface-offset:#1d1c1a;--color-border:#393836;--color-divider:#262523;
+  --color-text:#cdccca;--color-text-muted:#797876;--color-text-faint:#5a5957;
+  --color-primary:#4f98a3;--color-primary-hover:#227f8b;--color-primary-highlight:#313b3b;
+  --color-success:#6daa45;--color-success-highlight:#3a4435;
+  --color-error:#d163a7;--color-error-highlight:#4c3d46;
+  --color-warning:#bb653b;--color-warning-highlight:#564942;
+  --shadow-sm:0 1px 2px oklch(0 0 0 / 0.2);--shadow-md:0 4px 12px oklch(0 0 0 / 0.3);--shadow-lg:0 12px 32px oklch(0 0 0 / 0.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);color:var(--color-text);background:var(--color-bg);line-height:1.6}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit;transition:color var(--transition),background var(--transition),border-color var(--transition),box-shadow var(--transition)}
+input,select{font:inherit;color:inherit;transition:border-color var(--transition),box-shadow var(--transition)}
+:focus-visible{outline:2px solid var(--color-primary);outline-offset:3px;border-radius:var(--radius-sm)}
+.app{display:grid;grid-template-rows:auto 1fr;min-height:100dvh}
+header{background:var(--color-surface);border-bottom:1px solid var(--color-border);padding:var(--space-4) var(--space-6);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm)}
+.logo{display:flex;align-items:center;gap:var(--space-3)}
+.logo svg{color:var(--color-primary)}
+.logo-text{font-weight:700;font-size:var(--text-lg);letter-spacing:-0.02em}
+.logo-text span{color:var(--color-primary)}
+.theme-btn{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);border:1px solid var(--color-border)}
+.theme-btn:hover{background:var(--color-surface-offset);color:var(--color-text)}
+.main{display:grid;grid-template-columns:360px 1fr}
+@media(max-width:900px){.main{grid-template-columns:1fr}}
+.sidebar{background:var(--color-surface);border-right:1px solid var(--color-border);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);overflow-y:auto;max-height:calc(100vh - 60px)}
+.section-title{font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-muted);margin-bottom:var(--space-3)}
+.field{display:flex;flex-direction:column;gap:var(--space-2)}
+.field label{font-size:var(--text-sm);font-weight:500;color:var(--color-text-muted)}
+.field input,.field select{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--color-text);width:100%}
+.field input:focus,.field select:focus{border-color:var(--color-primary);box-shadow:0 0 0 3px color-mix(in oklch,var(--color-primary) 20%,transparent);outline:none}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-3)}
+.btn-primary{background:var(--color-primary);color:#fff;border-radius:var(--radius-md);padding:var(--space-3) var(--space-5);font-size:var(--text-sm);font-weight:600;width:100%}
+.btn-primary:hover{background:var(--color-primary-hover)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:var(--color-surface-offset);color:var(--color-text);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-4);font-size:var(--text-sm);font-weight:500}
+.btn-secondary:hover{background:var(--color-divider)}
+.btn-secondary:disabled{opacity:.5;cursor:not-allowed}
+.btn-danger{background:transparent;color:var(--color-error);border:1px solid var(--color-error);border-radius:var(--radius-md);padding:2px var(--space-3);font-size:var(--text-xs);font-weight:500}
+.btn-danger:hover{background:var(--color-error-highlight)}
+.badge{display:inline-flex;align-items:center;padding:2px var(--space-2);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600}
+.badge-inside{background:var(--color-success-highlight);color:var(--color-success)}
+.badge-outside{background:var(--color-error-highlight);color:var(--color-error)}
+.badge-warn{background:var(--color-warning-highlight);color:var(--color-warning)}
+.info-card{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4)}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:var(--space-1) 0;font-size:var(--text-sm);border-bottom:1px solid var(--color-divider)}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--color-text-muted)}
+.info-value{font-weight:500;font-variant-numeric:tabular-nums;font-family:"Courier New",monospace;font-size:var(--text-xs)}
+.devices-list{display:flex;flex-direction:column;gap:var(--space-2);max-height:200px;overflow-y:auto}
+.device-item{display:flex;align-items:center;justify-content:space-between;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-sm)}
+.device-info{display:flex;align-items:center;gap:var(--space-2)}
+.device-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.device-dot.inside{background:var(--color-success)}
+.device-dot.outside{background:var(--color-error)}
+.device-name{font-weight:500}
+.device-coords{color:var(--color-text-muted);font-size:var(--text-xs);font-family:monospace}
+.empty-state{text-align:center;padding:var(--space-6);color:var(--color-text-muted);font-size:var(--text-sm)}
+.log{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3);max-height:120px;overflow-y:auto;font-family:"Courier New",monospace;font-size:var(--text-xs);display:flex;flex-direction:column;gap:2px}
+.log-entry{color:var(--color-text-muted)}
+.log-entry.inside{color:var(--color-success)}
+.log-entry.outside{color:var(--color-error)}
+.log-entry.system{color:var(--color-primary)}
+.canvas-area{padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4);background:var(--color-bg);overflow-y:auto}
+.canvas-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3)}
+.canvas-title{font-weight:700;font-size:var(--text-lg)}
+.canvas-controls{display:flex;gap:var(--space-2);align-items:center}
+.canvas-wrap{position:relative;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-md)}
+canvas{display:block;width:100%}
+.canvas-legend{display:flex;flex-wrap:wrap;gap:var(--space-4);padding:var(--space-3) var(--space-4);background:var(--color-surface);border-top:1px solid var(--color-border)}
+.legend-item{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--space-3)}
+.stat-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4)}
+.stat-value{font-size:var(--text-xl);font-weight:700;font-variant-numeric:tabular-nums;line-height:1;margin-bottom:var(--space-1)}
+.stat-label{font-size:var(--text-xs);color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.stat-value.green{color:var(--color-success)}
+.stat-value.red{color:var(--color-error)}
+.stat-value.teal{color:var(--color-primary)}
+.add-row{display:flex;gap:var(--space-2)}
+.add-row input{flex:1;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-sm)}
+.add-row input:focus{border-color:var(--color-primary);box-shadow:0 0 0 3px color-mix(in oklch,var(--color-primary) 20%,transparent);outline:none}
+#tooltip{position:absolute;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);font-family:monospace;color:var(--color-text);pointer-events:none;z-index:10;box-shadow:var(--shadow-md);display:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="GeoFence logo">
+      <rect x="2" y="2" width="24" height="24" rx="4" stroke="currentColor" stroke-width="2"/>
+      <rect x="7" y="7" width="14" height="14" rx="2" fill="currentColor" opacity="0.18"/>
+      <circle cx="14" cy="14" r="3" fill="currentColor"/>
+      <line x1="14" y1="2" x2="14" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <line x1="14" y1="22" x2="14" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <line x1="2" y1="14" x2="6" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <line x1="22" y1="14" x2="26" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span class="logo-text">Geo<span>Fence</span> Room</span>
+  </div>
+  <button class="theme-btn" data-theme-toggle aria-label="Toggle theme">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
+
+<div class="main">
+<aside class="sidebar">
+  <!-- Room Config -->
+  <div>
+    <div class="section-title">Room Configuration</div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+      <div class="field-row-3">
+        <div class="field"><label>Length (m)</label><input type="number" id="roomLength" value="10" min="1" max="200" step="0.1"></div>
+        <div class="field"><label>Width (m)</label><input type="number" id="roomWidth" value="5" min="1" max="200" step="0.1"></div>
+        <div class="field"><label>Height (m)</label><input type="number" id="roomHeight" value="5" min="1" max="50" step="0.1"></div>
+      </div>
+      <div class="field">
+        <label>GPS Buffer / Padding (m) <span style="font-size:var(--text-xs);color:var(--color-text-faint)">— compensates for GPS inaccuracy</span></label>
+        <input type="range" id="bufferSlider" min="0" max="15" step="0.5" value="2" style="accent-color:var(--color-primary)">
+        <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--color-text-muted)">
+          <span>0 m (tight)</span><span id="bufferVal" style="font-weight:600;color:var(--color-primary)">2.0 m</span><span>15 m (loose)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anchor GPS -->
+  <div>
+    <div class="section-title">Anchor Phone GPS</div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+      <div class="field-row">
+        <div class="field"><label>Latitude</label><input type="number" id="anchorLat" value="18.520430" step="0.000001"></div>
+        <div class="field"><label>Longitude</label><input type="number" id="anchorLng" value="73.856744" step="0.000001"></div>
+      </div>
+      <div class="field">
+        <label>Phone placed at wall</label>
+        <select id="phoneEnd">
+          <option value="north">North wall (top)</option>
+          <option value="south">South wall (bottom)</option>
+          <option value="east">East wall (right)</option>
+          <option value="west">West wall (left)</option>
+        </select>
+      </div>
+      <button class="btn-primary" id="buildFence">⬡ Build Bounding Box &amp; Geofence</button>
+    </div>
+  </div>
+
+  <!-- BBox Display -->
+  <div>
+    <div class="section-title">Bounding Box Coordinates</div>
+    <div class="info-card">
+      <div class="info-row"><span class="info-label">North (max lat)</span><span class="info-value" id="bb-north">—</span></div>
+      <div class="info-row"><span class="info-label">South (min lat)</span><span class="info-value" id="bb-south">—</span></div>
+      <div class="info-row"><span class="info-label">East (max lng)</span><span class="info-value" id="bb-east">—</span></div>
+      <div class="info-row"><span class="info-label">West (min lng)</span><span class="info-value" id="bb-west">—</span></div>
+      <div class="info-row"><span class="info-label">Center</span><span class="info-value" id="bb-center">—</span></div>
+      <div class="info-row"><span class="info-label">GPS Accuracy</span><span class="info-value" style="color:var(--color-warning);font-family:var(--font-body)">±3–10 m typical</span></div>
+    </div>
+  </div>
+
+  <!-- Add Device -->
+  <div>
+    <div class="section-title">Test a Device</div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+      <div class="add-row"><input type="text" id="devName" placeholder="Device name" value="Device 1"></div>
+      <div class="field-row">
+        <div class="field"><label>Latitude</label><input type="number" id="devLat" value="18.520430" step="0.000001"></div>
+        <div class="field"><label>Longitude</label><input type="number" id="devLng" value="73.856744" step="0.000001"></div>
+      </div>
+      <div style="display:flex;gap:var(--space-2)">
+        <button class="btn-secondary" id="randDevice" style="flex:1">🎲 Random</button>
+        <button class="btn-primary" id="addDevice" style="flex:2">+ Add Device</button>
+      </div>
+      <div style="font-size:var(--text-xs);color:var(--color-text-muted)">💡 Or click anywhere on the canvas to place a device</div>
+    </div>
+  </div>
+
+  <!-- Device List -->
+  <div>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Registered Devices</span>
+      <button class="btn-danger" id="clearDevices">Clear all</button>
+    </div>
+    <div class="devices-list" id="deviceList">
+      <div class="empty-state">📡 No devices added yet</div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div>
+    <div class="section-title">Activity Log</div>
+    <div class="log" id="activityLog">
+      <div class="log-entry system">▶ Ready. Configure room and build a geofence.</div>
+    </div>
+  </div>
+</aside>
+
+<!-- Canvas -->
+<div class="canvas-area">
+  <div class="canvas-header">
+    <div class="canvas-title">Geofence Visualizer</div>
+    <div class="canvas-controls">
+      <button class="btn-secondary" id="btnSimulate">▶ Auto-Simulate</button>
+      <button class="btn-secondary" id="btnStop" disabled>⏹ Stop</button>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card"><div class="stat-value teal" id="statTotal">0</div><div class="stat-label">Total Devices</div></div>
+    <div class="stat-card"><div class="stat-value green" id="statInside">—</div><div class="stat-label">Inside Fence ✅</div></div>
+    <div class="stat-card"><div class="stat-value red" id="statOutside">—</div><div class="stat-label">Outside Fence 🚫</div></div>
+    <div class="stat-card"><div class="stat-value teal" id="statArea">—</div><div class="stat-label">Fence Area m²</div></div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="geoCanvas" width="860" height="500"></canvas>
+    <div id="tooltip"></div>
+    <div class="canvas-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-primary)"></div>Anchor Phone</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(79,152,163,0.2);border:2px solid var(--color-primary);width:12px;height:12px;border-radius:3px"></div>Bounding Box (Geofence)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-success)"></div>Device INSIDE</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-error)"></div>Device OUTSIDE</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(120,120,120,0.2);border:2px dashed #888;width:12px;height:12px;border-radius:2px"></div>Room boundary</div>
+    </div>
+  </div>
+
+  <div class="info-card">
+    <div style="font-weight:600;font-size:var(--text-sm);margin-bottom:var(--space-3)">⚠ GPS Accuracy &amp; Bounding Box Logic</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted);line-height:1.8">
+      <div>• Outdoor GPS accuracy: <strong style="color:var(--color-text)">±3–10 m</strong> (some inaccuracy is expected)</div>
+      <div>• Indoor GPS is often unreliable — buildings block satellite signals</div>
+      <div>• Set <strong style="color:var(--color-primary)">buffer ≥ your expected GPS error</strong> to avoid false rejections</div>
+      <div>• Bounding box uses the <strong style="color:var(--color-text)">Haversine offset formula</strong> from anchor point</div>
+      <div>• 1° lat ≈ 111,320 m &nbsp;|&nbsp; 1° lng ≈ 111,320 × cos(lat) m</div>
+      <div>• For room-level precision: consider BLE, UWB, or Wi-Fi RTT</div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<script>
+const M = {
+  fence: null,
+  room: { length:10, width:5, height:5 },
+  buffer: 2,
+  anchor: { lat:18.520430, lng:73.856744 },
+  phoneEnd: 'north',
+  devices: [],
+  simTimer: null,
+  simCount: 0
+};
+
+const DEG_LAT = 111320;
+const toLat = m => m / DEG_LAT;
+const toLng = (m, lat) => m / (DEG_LAT * Math.cos(lat * Math.PI / 180));
+const fmt = v => v.toFixed(6);
+
+function buildFence(lat, lng, len, wid, buf, end) {
+  const hw = wid / 2 + buf;
+  const L = len + buf;
+  let n, s, e, w;
+  if (end === 'north') { n=lat+toLat(buf); s=lat-toLat(L); e=lng+toLng(hw,lat); w=lng-toLng(hw,lat); }
+  else if (end === 'south') { s=lat-toLat(buf); n=lat+toLat(L); e=lng+toLng(hw,lat); w=lng-toLng(hw,lat); }
+  else if (end === 'east') { e=lng+toLng(buf,lat); w=lng-toLng(L,lat); n=lat+toLat(hw); s=lat-toLat(hw); }
+  else { w=lng-toLng(buf,lat); e=lng+toLng(L,lat); n=lat+toLat(hw); s=lat-toLat(hw); }
+  return { n, s, e, w, cLat:(n+s)/2, cLng:(e+w)/2 };
+}
+
+function inside(lat, lng, f) { return lat<=f.n && lat>=f.s && lng<=f.e && lng>=f.w; }
+
+function log(msg, type='system') {
+  const el = document.getElementById('activityLog');
+  const t = new Date().toLocaleTimeString();
+  const d = document.createElement('div');
+  d.className = 'log-entry ' + type;
+  d.textContent = `[${t}] ${msg}`;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function updateInfo() {
+  const f = M.fence;
+  if (!f) return;
+  document.getElementById('bb-north').textContent = fmt(f.n);
+  document.getElementById('bb-south').textContent = fmt(f.s);
+  document.getElementById('bb-east').textContent  = fmt(f.e);
+  document.getElementById('bb-west').textContent  = fmt(f.w);
+  document.getElementById('bb-center').textContent = `${fmt(f.cLat)}, ${fmt(f.cLng)}`;
+  const area = Math.round((f.n-f.s)*DEG_LAT*(f.e-f.w)*DEG_LAT*Math.cos(f.cLat*Math.PI/180));
+  document.getElementById('statArea').textContent = area.toLocaleString();
+}
+
+function updateDevices() {
+  const el = document.getElementById('deviceList');
+  const f = M.fence;
+  if (!M.devices.length) { el.innerHTML='<div class="empty-state">📡 No devices added yet</div>'; }
+  else {
+    el.innerHTML = M.devices.map((d,i)=>{
+      const ins = f ? inside(d.lat,d.lng,f) : null;
+      const badge = f ? (ins?'<span class="badge badge-inside">INSIDE</span>':'<span class="badge badge-outside">OUTSIDE</span>') : '<span class="badge badge-warn">NO FENCE</span>';
+      return `<div class="device-item">
+        <div class="device-info">
+          <div class="device-dot ${f?(ins?"inside":"outside"):""}"></div>
+          <div><div class="device-name">${d.name}</div><div class="device-coords">${fmt(d.lat)}, ${fmt(d.lng)}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-2)">${badge}<button class="btn-danger" onclick="rmDev(${i})">✕</button></div>
+      </div>`;
+    }).join('');
+  }
+  const ins = f ? M.devices.filter(d=>inside(d.lat,d.lng,f)).length : null;
+  document.getElementById('statTotal').textContent   = M.devices.length;
+  document.getElementById('statInside').textContent  = f ? ins : '—';
+  document.getElementById('statOutside').textContent = f ? (M.devices.length - ins) : '—';
+}
+
+function rmDev(i) { log(`Removed: ${M.devices[i].name}`,'system'); M.devices.splice(i,1); updateDevices(); draw(); }
+window.rmDev = rmDev;
+
+function draw() {
+  const cv = document.getElementById('geoCanvas');
+  const ctx = cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  const bg    = dark?'#1c1b19':'#f9f8f5';
+  const gc    = dark?'rgba(255,255,255,0.035)':'rgba(0,0,0,0.035)';
+  const tc    = dark?'#797876':'#7a7974';
+  const fc    = dark?'#4f98a3':'#01696f';
+
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=gc; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  if(!M.fence){
+    ctx.fillStyle=tc; ctx.font='14px Satoshi,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Configure your room and click "Build Bounding Box & Geofence"',W/2,H/2);
+    return;
+  }
+  const f=M.fence, PAD=72;
+
+  function tc2(lat,lng){
+    const x=PAD+((lng-f.w)/(f.e-f.w))*(W-PAD*2);
+    const y=PAD+((f.n-lat)/(f.n-f.s))*(H-PAD*2);
+    return{x,y};
+  }
+  const tl=tc2(f.n,f.w), br=tc2(f.s,f.e);
+  const fw=br.x-tl.x, fh=br.y-tl.y;
+
+  // Fence fill
+  ctx.fillStyle=dark?'rgba(79,152,163,0.07)':'rgba(1,105,111,0.05)';
+  ctx.beginPath(); ctx.roundRect(tl.x,tl.y,fw,fh,6); ctx.fill();
+
+  // Room inner (without buffer)
+  const b=M.buffer;
+  const rn=f.n-toLat(b), rs=f.s+toLat(b);
+  const re=f.e-toLng(b,f.cLat), rw=f.w+toLng(b,f.cLat);
+  const rtl=tc2(rn,rw), rbr=tc2(rs,re);
+  ctx.fillStyle=dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)';
+  ctx.fillRect(rtl.x,rtl.y,rbr.x-rtl.x,rbr.y-rtl.y);
+  ctx.strokeStyle=dark?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.15)';
+  ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+  ctx.strokeRect(rtl.x,rtl.y,rbr.x-rtl.x,rbr.y-rtl.y);
+  ctx.setLineDash([]);
+
+  // Room label
+  ctx.fillStyle=tc; ctx.font='11px Satoshi,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`${M.room.length}m × ${M.room.width}m room`,( rtl.x+rbr.x)/2,(rtl.y+rbr.y)/2);
+
+  // Fence border
+  ctx.strokeStyle=fc; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.roundRect(tl.x,tl.y,fw,fh,6); ctx.stroke();
+
+  // Corner marks
+  const cs=10; ctx.lineWidth=3;
+  [[tl.x,tl.y,1,1],[tl.x+fw,tl.y,-1,1],[tl.x,tl.y+fh,1,-1],[tl.x+fw,tl.y+fh,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath();ctx.moveTo(x+dx*cs,y);ctx.lineTo(x,y);ctx.lineTo(x,y+dy*cs);ctx.stroke();
+  });
+
+  // Coordinate labels
+  ctx.fillStyle=fc; ctx.font='bold 10px "Courier New",monospace';
+  ctx.textAlign='center'; ctx.fillText(`N ${fmt(f.n)}°`,W/2,tl.y-8);
+  ctx.fillText(`S ${fmt(f.s)}°`,W/2,br.y+16);
+  ctx.textAlign='left'; ctx.fillText(`W ${fmt(f.w)}°`,4,H/2);
+  ctx.textAlign='right'; ctx.fillText(`E ${fmt(f.e)}°`,W-4,H/2);
+
+  // Buffer dimension indicator
+  ctx.strokeStyle=dark?'rgba(79,152,163,0.4)':'rgba(1,105,111,0.3)';
+  ctx.lineWidth=1; ctx.setLineDash([2,3]);
+  ctx.beginPath(); ctx.moveTo(tl.x,tl.y); ctx.lineTo(rtl.x,rtl.y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=dark?'rgba(79,152,163,0.7)':'rgba(1,105,111,0.7)';
+  ctx.font='10px Satoshi,sans-serif'; ctx.textAlign='left';
+  ctx.fillText(`±${b}m buffer`,tl.x+4,tl.y+12);
+
+  // Anchor
+  const ap=tc2(M.anchor.lat, M.anchor.lng);
+  ctx.save(); ctx.shadowColor=fc; ctx.shadowBlur=14;
+  ctx.fillStyle=fc; ctx.beginPath(); ctx.arc(ap.x,ap.y,9,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(ap.x,ap.y,9,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle=fc; ctx.font='bold 11px Satoshi,sans-serif'; ctx.textAlign='center';
+  ctx.fillText('📱 Anchor Phone',ap.x,ap.y-15);
+
+  // Devices
+  M.devices.forEach(d=>{
+    const ins=inside(d.lat,d.lng,f);
+    const p=tc2(d.lat,d.lng);
+    const col=ins?(dark?'#6daa45':'#437a22'):(dark?'#d163a7':'#a12c7b');
+    ctx.save(); ctx.shadowColor=col; ctx.shadowBlur=8;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(p.x,p.y,6,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(p.x,p.y,6,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle=col; ctx.font='11px Satoshi,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(d.name,p.x,p.y-12);
+    if(!ins){
+      const cx=(tl.x+br.x)/2,cy=(tl.y+br.y)/2;
+      const dx=cx-p.x,dy=cy-p.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.strokeStyle=col; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(p.x+dx/len*8,p.y+dy/len*8); ctx.lineTo(p.x+dx/len*22,p.y+dy/len*22); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+
+  // Bottom label
+  ctx.fillStyle=tc; ctx.font='11px Satoshi,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`Room: ${M.room.length}m × ${M.room.width}m × ${M.room.height}m  |  Buffer: ±${M.buffer}m  |  Click canvas to place device`,W/2,H-8);
+}
+
+// Controls
+document.getElementById('bufferSlider').addEventListener('input',e=>{
+  document.getElementById('bufferVal').textContent=parseFloat(e.target.value).toFixed(1)+' m';
+});
+
+document.getElementById('buildFence').addEventListener('click',()=>{
+  M.room.length=parseFloat(document.getElementById('roomLength').value)||10;
+  M.room.width =parseFloat(document.getElementById('roomWidth').value)||5;
+  M.room.height=parseFloat(document.getElementById('roomHeight').value)||5;
+  M.buffer=parseFloat(document.getElementById('bufferSlider').value)||2;
+  M.anchor.lat=parseFloat(document.getElementById('anchorLat').value);
+  M.anchor.lng=parseFloat(document.getElementById('anchorLng').value);
+  M.phoneEnd=document.getElementById('phoneEnd').value;
+  M.fence=buildFence(M.anchor.lat,M.anchor.lng,M.room.length,M.room.width,M.buffer,M.phoneEnd);
+  updateInfo(); updateDevices(); draw();
+  log(`Geofence built | Room ${M.room.length}×${M.room.width}m | Buffer ±${M.buffer}m | Anchor: ${fmt(M.anchor.lat)},${fmt(M.anchor.lng)}`,'system');
+});
+
+document.getElementById('addDevice').addEventListener('click',()=>{
+  const name=document.getElementById('devName').value.trim()||`Device ${M.devices.length+1}`;
+  const lat=parseFloat(document.getElementById('devLat').value);
+  const lng=parseFloat(document.getElementById('devLng').value);
+  if(isNaN(lat)||isNaN(lng)){log('Invalid coordinates','outside');return;}
+  M.devices.push({name,lat,lng});
+  if(M.fence){const ins=inside(lat,lng,M.fence);log(`${name} → ${ins?'✅ REGISTERED (inside)':'🚫 REJECTED (outside)'} (${fmt(lat)},${fmt(lng)})`,ins?'inside':'outside');}
+  else{log(`${name} added — build fence to check`,'system');}
+  document.getElementById('devName').value=`Device ${M.devices.length+1}`;
+  updateDevices(); draw();
+});
+
+document.getElementById('randDevice').addEventListener('click',()=>{
+  if(!M.fence){log('Build a fence first','system');return;}
+  const f=M.fence, span=1.6;
+  const ls=(f.n-f.s)*span, lgs=(f.e-f.w)*span;
+  document.getElementById('devLat').value=((f.s-ls*.2)+Math.random()*ls).toFixed(6);
+  document.getElementById('devLng').value=((f.w-lgs*.2)+Math.random()*lgs).toFixed(6);
+});
+
+document.getElementById('clearDevices').addEventListener('click',()=>{
+  M.devices=[]; log('All devices cleared','system'); updateDevices(); draw();
+});
+
+let simT=null;
+document.getElementById('btnSimulate').addEventListener('click',()=>{
+  if(!M.fence){log('Build a fence first','system');return;}
+  document.getElementById('btnSimulate').disabled=true;
+  document.getElementById('btnStop').disabled=false;
+  M.simCount=0;
+  simT=setInterval(()=>{
+    if(M.simCount>=10){document.getElementById('btnStop').click();return;}
+    const f=M.fence, ls=(f.n-f.s)*1.7, lgs=(f.e-f.w)*1.7;
+    const lat=(f.s-ls*.25)+Math.random()*ls, lng=(f.w-lgs*.25)+Math.random()*lgs;
+    const name=`Sim-${String.fromCharCode(65+M.simCount)}`;
+    M.devices.push({name,lat,lng});
+    const ins=inside(lat,lng,f);
+    log(`[SIM] ${name} → ${ins?'✅ REGISTERED':'🚫 REJECTED'}`,ins?'inside':'outside');
+    M.simCount++; updateDevices(); draw();
+  },700);
+});
+
+document.getElementById('btnStop').addEventListener('click',()=>{
+  if(simT){clearInterval(simT);simT=null;}
+  document.getElementById('btnSimulate').disabled=false;
+  document.getElementById('btnStop').disabled=true;
+  log('Simulation stopped','system');
+});
+
+// Canvas click = place device
+const cv=document.getElementById('geoCanvas');
+cv.addEventListener('click',e=>{
+  if(!M.fence)return;
+  const f=M.fence, rect=cv.getBoundingClientRect();
+  const PAD=72, sx=cv.width/rect.width, sy=cv.height/rect.height;
+  const mx=(e.clientX-rect.left)*sx, my=(e.clientY-rect.top)*sy;
+  const lat=f.n-((my-PAD)/(cv.height-PAD*2))*(f.n-f.s);
+  const lng=f.w+((mx-PAD)/(cv.width-PAD*2))*(f.e-f.w);
+  const name=`Click-${M.devices.length+1}`;
+  M.devices.push({name,lat,lng});
+  const ins=inside(lat,lng,f);
+  log(`${name} (canvas click) → ${ins?'✅ REGISTERED':'🚫 REJECTED'} (${fmt(lat)},${fmt(lng)})`,ins?'inside':'outside');
+  updateDevices(); draw();
+});
+
+// Tooltip on hover
+cv.addEventListener('mousemove',e=>{
+  if(!M.fence)return;
+  const f=M.fence, rect=cv.getBoundingClientRect();
+  const PAD=72, sx=cv.width/rect.width, sy=cv.height/rect.height;
+  const mx=(e.clientX-rect.left)*sx, my=(e.clientY-rect.top)*sy;
+  const lat=f.n-((my-PAD)/(cv.height-PAD*2))*(f.n-f.s);
+  const lng=f.w+((mx-PAD)/(cv.width-PAD*2))*(f.e-f.w);
+  const tip=document.getElementById('tooltip');
+  const ins=inside(lat,lng,f);
+  tip.style.display='block';
+  tip.style.left=(e.clientX-rect.left+12)+'px';
+  tip.style.top=(e.clientY-rect.top-30)+'px';
+  tip.textContent=`${fmt(lat)}, ${fmt(lng)}  [${ins?'INSIDE':'OUTSIDE'}]`;
+  tip.style.color=ins?'var(--color-success)':'var(--color-error)';
+});
+cv.addEventListener('mouseleave',()=>{document.getElementById('tooltip').style.display='none';});
+
+// Theme toggle
+(function(){
+  const t=document.querySelector('[data-theme-toggle]'),r=document.documentElement;
+  let d='dark'; r.setAttribute('data-theme',d);
+  t&&t.addEventListener('click',()=>{
+    d=d==='dark'?'light':'dark'; r.setAttribute('data-theme',d);
+    t.innerHTML=d==='dark'
+      ?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+      :'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+    draw();
+  });
+})();
+
+draw();
+</script>
+</body>
+</html>
